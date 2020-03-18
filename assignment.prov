@@ -1,0 +1,86 @@
+free net.
+free v1, v2, v3, v4.
+
+(*Init channels*)
+private free WInitChannel, UInitChannel, URecieveChannel.
+
+(*Cryptographic constructors*)
+fun pencrypt/2. (*Generate message with public key*)
+fun sign/2. (*Digital signing*)
+fun enc/1. (* extracts encryption key from a key-pair *)
+fun dec/1. (* extracts decryption key from a key-pair *)
+(*Symmetric crypto*)
+fun sencrypt/2.
+
+(*Constructor for secret key pairs*)
+private fun pubkeypair/1.
+private fun signkeypair/1.
+
+(*Cryptographic destructors*)
+reduc pdecrypt(pencrypt(x, enc(y)), dec(y)) = x. (*Decrypt message*)
+reduc unsign(sign(x, enc(y)), dec(y)) = x.
+(*Symmetric crypto*)
+reduc sdecrypt(sencrypt(x, k), k) = x.
+
+private fun picked/1.
+
+private free win.
+
+query attacker: uguess phase 0.
+query attacker: correct phase 0.
+query attacker: win.
+
+query ev:end(x,y) ==> ev:begin(x,y).
+
+let W =
+    in(WInitChannel, (Wk, Wks));
+
+    new correctK;
+    let correct = picked(v1) in
+        out(net, sencrypt(correct, correctK));
+
+        in(URecieveChannel, (Uid, Upk));
+
+        in(net, (=Uid, x));
+        let guess = unsign(pdecrypt(x, dec(Wk)), Upk) in
+            event end(Uid, guess);
+
+            let verified_guess = sign(x, enc(Wks)) in
+                out(net, verified_guess);
+                phase 1;
+
+                out(net, correctK);
+
+                in(net, g);
+                let a = unsign(pdecrypt(unsign(g, dec(Wks)), dec(Wk)), Upk) in
+                    if a = correct then
+                        out(net, win).
+
+let U =
+    in(UInitChannel, (Uid, Uk, Wpk, Wusk));
+    in(net, enc_correct);
+    
+    let uguess = picked(v2) in
+        event begin(Uid, uguess);
+        out(net, (Uid, pencrypt(sign(uguess, enc(Uk)), Wpk)));
+
+        in(net, verified_guess);
+
+        phase 1;
+
+        in(net, correctk);
+        if sdecrypt(enc_correct, correctk) = uguess then
+            out(net, verified_guess).
+
+let initializer =
+    new Wk;
+    out(WInitChannel, (pubkeypair(Wk), signkeypair(Wk)));
+    out(net, (enc(pubkeypair(Wk)), dec(signkeypair(Wk))));
+
+    new U1id;
+    new U1k;
+    out(UInitChannel, (U1id, signkeypair(U1k), enc(pubkeypair(Wk)), dec(signkeypair(Wk))));
+    out(URecieveChannel, (U1id, dec(signkeypair(U1k))));
+    out(net, (U1id, dec(signkeypair(U1k)))).
+
+process initializer|U|W

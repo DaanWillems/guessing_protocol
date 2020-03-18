@@ -1,0 +1,23 @@
+free net. (* Public network/channel *)
+
+fun enc/2.
+private free k.
+reduc dec(enc(x,y),y)=x.
+
+(* Queries: what do we want proverif to check *) query attacker: win. (* Does the attacker learn the name ‘win’ *)
+
+(* Guessing game protocol *) 
+let A = (* the process for Alice *) 
+    new p;
+    out(net, enc(p, k));
+    new n; (* choose a new random number *) 
+    out(net, n). (* tell Bob. *)
+
+let B = (* the process for Bob *) 
+    in(net, p);
+    let c = dec(p, k) in
+    new m; out(c, m) | in(net, x);
+    if x = m then (* Check whether numbers are equal *) 
+        new win; out(net, win). (* If so publicly claim the win *)
+
+process A | B (* Whole system: Alice in parallel with Bob *)

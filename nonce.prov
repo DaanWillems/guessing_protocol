@@ -1,0 +1,25 @@
+free net.
+private free prKa.
+
+fun pk/1.
+
+fun pencrypt/2.
+reduc pdecrypt(pencrypt(x, pk(y)),y) = x.
+
+query attacker: n.
+
+let A = 
+    in(net, pKa);
+    new c;
+    out(net, pencrypt(c, pKa));
+    in(c, x).
+    
+let B = 
+    in(net, c);
+    let q = pdecrypt(c, prKa) in
+    new n;
+    out(c, q).
+
+process new prKa;
+    let pKa = pk(prKa) in
+    A|B
